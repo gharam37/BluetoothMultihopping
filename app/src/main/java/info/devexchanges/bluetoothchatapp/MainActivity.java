@@ -122,56 +122,22 @@ public class MainActivity extends AppCompatActivity {
                     //chatMessages.add(connectingDevice.getName() + ":  " + readMessage+MyName);
                     String[] arrOfStr = readMessage.split("@");
 
-                    if(arrOfStr.length>1 &&arrOfStr[1].equals(MyName)){
+                    if(arrOfStr[1].equals(MyName)){
 
                         chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this was for me");
                         chatAdapter.notifyDataSetChanged();
 
 
                     }
-
-                    else if (arrOfStr.length>1 && !arrOfStr[1].equals(MyName)){
-                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this wasn't for me");
-                        chatAdapter.notifyDataSetChanged();
-                        chatController.stop();
-
-
-                        for(int i=0;i<PairedDeviced.size();i++){
-
-                            if(PairedDeviced.get(i).getName().equals(arrOfStr[1])){
-                                chatMessages.add("This is for my neighbor device"+arrOfStr[1]);
-                                chatAdapter.notifyDataSetChanged();
-                                BluetoothDevice target=PairedDeviced.get(i);
-                                connectToDevice(target.getAddress());
-
-                               while(chatController.getState()!=chatController.STATE_CONNECTED){
-                                    try {
-                                        Thread.sleep(1000);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-
-
-                                }
-
-                              sendMessage("Hi Bae I'm Routing to you " + arrOfStr[0]);
-                               break;
-
-
-
-
-                            }
-
-                        }
-
-
-                    }
                     else{
-                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+"");
-                        chatAdapter.notifyDataSetChanged();
-
-
+                        sendMessage(readMessage);
                     }
+
+
+
+
+
+
 
 
 
@@ -316,15 +282,60 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendMessage(String message) {
-        if (chatController.getState() != ChatController.STATE_CONNECTED) {
-            Toast.makeText(this, "Connection was lost!", Toast.LENGTH_SHORT).show();
-            return;
+
+        String[] arrOfStr = message.split("@");
+        for(int i=0;i<PairedDeviced.size();i++){
+            if(PairedDeviced.get(i).getName().equals(arrOfStr[1])){
+                BluetoothDevice target=PairedDeviced.get(i);
+                connectToDevice(target.getAddress());
+
+                while(chatController.getState()!=chatController.STATE_CONNECTED){
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                if (arrOfStr[0].length() > 0) {
+                    byte[] send = message.getBytes();
+                    chatController.write(send);
+                }
+                return;
+
+
+
+
+            }
+
+
+        }
+        if(PairedDeviced.size()>0){
+
+            BluetoothDevice target=PairedDeviced.get(0);
+            connectToDevice(target.getAddress());
+
+            while(chatController.getState()!=chatController.STATE_CONNECTED){
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+            if(message.length()>0){
+
+                byte[] send = message.getBytes();
+                chatController.write(send);
+
+            }
+
         }
 
-        if (message.length() > 0) {
-            byte[] send = message.getBytes();
-            chatController.write(send);
-        }
+
     }
 
     @Override
