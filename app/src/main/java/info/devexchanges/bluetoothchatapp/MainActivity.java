@@ -133,19 +133,20 @@ public class MainActivity extends AppCompatActivity {
                     else if (arrOfStr.length>1 && !arrOfStr[1].equals(MyName)){
                         chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this wasn't for me");
                         chatAdapter.notifyDataSetChanged();
+                        chatController.stop();
+
 
                         for(int i=0;i<PairedDeviced.size();i++){
 
                             if(PairedDeviced.get(i).getName().equals(arrOfStr[1])){
                                 chatMessages.add("This is for my neighbor device"+arrOfStr[1]);
                                 chatAdapter.notifyDataSetChanged();
-                                chatController.stop();
                                 BluetoothDevice target=PairedDeviced.get(i);
                                 connectToDevice(target.getAddress());
 
                                while(chatController.getState()!=chatController.STATE_CONNECTED){
                                     try {
-                                        Thread.sleep(1);
+                                        Thread.sleep(1000);
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
                                     }
@@ -154,17 +155,13 @@ public class MainActivity extends AppCompatActivity {
                                 }
 
                               sendMessage("Hi Bae I'm Routing to you " + arrOfStr[0]);
+                               break;
 
 
 
 
                             }
-                            else{
-                                chatMessages.add("I don't know who is this for");
-                                chatAdapter.notifyDataSetChanged();
 
-
-                            }
                         }
 
 
