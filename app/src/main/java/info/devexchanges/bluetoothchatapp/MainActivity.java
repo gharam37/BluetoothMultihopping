@@ -47,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothDevice connectingDevice;
     private ArrayAdapter<String> discoveredDevicesAdapter;
 
+    private ArrayList<BluetoothDevice> PairedDeviced= new ArrayList<BluetoothDevice> ();
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,11 +78,19 @@ public class MainActivity extends AppCompatActivity {
         chatAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, chatMessages);
         listView.setAdapter(chatAdapter);
     }
-
+    public String getLocalBluetoothName(){
+        if(bluetoothAdapter == null){
+            bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        }
+        String name = bluetoothAdapter.getName();
+        if(name == null){
+            System.out.println("Name is null!");
+            name = bluetoothAdapter.getAddress();
+        }
+        return name;
+    }
     private Handler handler = new Handler(new Handler.Callback() {
-
-        @Override
-        public boolean handleMessage(Message msg) {
+        public boolean handleMessage(Message msg){
             switch (msg.what) {
                 case MESSAGE_STATE_CHANGE:
                     switch (msg.arg1) {
@@ -105,10 +117,69 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case MESSAGE_READ:
                     byte[] readBuf = (byte[]) msg.obj;
-
+                    String MyName =getLocalBluetoothName();
                     String readMessage = new String(readBuf, 0, msg.arg1);
-                    chatMessages.add(connectingDevice.getName() + ":  " + readMessage);
-                    chatAdapter.notifyDataSetChanged();
+                    //chatMessages.add(connectingDevice.getName() + ":  " + readMessage+MyName);
+                    String[] arrOfStr = readMessage.split("@");
+
+                    if(arrOfStr.length>1 &&arrOfStr[1].equals(MyName)){
+
+                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this was for me");
+                        chatAdapter.notifyDataSetChanged();
+
+
+                    }
+
+                    else if (arrOfStr.length>1 && !arrOfStr[1].equals(MyName)){
+                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this wasn't for me");
+                        chatAdapter.notifyDataSetChanged();
+
+                        for(int i=0;i<PairedDeviced.size();i++){
+
+                            if(PairedDeviced.get(i).getName().equals(arrOfStr[1])){
+                                chatMessages.add("This is for my neighbor device"+arrOfStr[1]);
+                                chatAdapter.notifyDataSetChanged();
+                                chatController.stop();
+                                BluetoothDevice target=PairedDeviced.get(i);
+                                connectToDevice(target.getAddress());
+
+                               while(chatController.getState()!=chatController.STATE_CONNECTED){
+                                    try {
+                                        Thread.sleep(1);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+
+
+                                }
+
+                              sendMessage("Hi Bae I'm Routing to you " + arrOfStr[0]);
+
+
+
+
+                            }
+                            else{
+                                chatMessages.add("I don't know who is this for");
+                                chatAdapter.notifyDataSetChanged();
+
+
+                            }
+                        }
+
+
+                    }
+                    else{
+                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+"");
+                        chatAdapter.notifyDataSetChanged();
+
+
+                    }
+
+
+
+
+
                     break;
                 case MESSAGE_DEVICE_OBJECT:
                     connectingDevice = msg.getData().getParcelable(DEVICE_OBJECT);
@@ -122,7 +193,8 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         }
-    });
+    }
+    );
 
     private void showPrinterPickDialog() {
         dialog = new Dialog(this);
@@ -159,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
         if (pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices) {
                 pairedDevicesAdapter.add(device.getName() + "\n" + device.getAddress());
+                PairedDeviced.add(device) ;
             }
         } else {
             pairedDevicesAdapter.add(getString(R.string.none_paired));

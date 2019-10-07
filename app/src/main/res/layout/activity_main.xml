@@ -18,7 +18,7 @@
             android:id="@+id/status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Not Connected" />
+            android:text="No Connection" />
 
         <Button
             android:id="@+id/btn_connect"
@@ -51,7 +51,7 @@
             <EditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Input some text" />
+                android:hint="Write something" />
         </android.support.design.widget.TextInputLayout>
 
         <Button
