@@ -13,6 +13,7 @@ import android.os.Message;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,7 +24,6 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Set;
-import android.util.Log;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,6 +51,32 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<BluetoothDevice> PairedDeviced= new ArrayList<BluetoothDevice> ();
     private String Topology="";
     private String TopologyRequestSender="";
+    private boolean isSent=false;
+    public String getPairedDevices(String requestDevice){
+
+        String deviceList="";
+        for(BluetoothDevice bt : PairedDeviced) {
+            if(!requestDevice.equals(bt.getName())){
+                deviceList += bt.getName() + ",";
+            }
+        }
+        return deviceList;
+    }
+    public void getTopology(){
+        for(BluetoothDevice bt :PairedDeviced){
+
+            if(!TopologyRequestSender.equals(bt.getName())){
+                Log.e("PAIRS","SENDING TO "+bt.getName());
+                sendMessage("getTopology@"+bt.getName());
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            isSent=true;
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
 
+
         //show bluetooth devices dialog when click connect button
         btnConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -73,37 +100,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        showPrinterPickDialog();
+
         //set chat adapter
         chatMessages = new ArrayList<>();
         chatAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, chatMessages);
         listView.setAdapter(chatAdapter);
-    }
-
-    public String getPairedDevices(String requestDevice){
-
-        String deviceList="";
-        for(BluetoothDevice bt : PairedDeviced) {
-            if(!requestDevice.equals(bt.getName())){
-                deviceList += bt.getName() + ",";
-            }
-        }
-        return deviceList;
-    }
-    public void getTopology(){
-        for(BluetoothDevice bt :PairedDeviced){
-            Log.e("PAIRS","pairs "+bt.getName());
-            if(!TopologyRequestSender.equals(bt.getName())){
-                sendMessage("getTopology@"+bt.getName());
-            }
-
-
-
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
     public String getLocalBluetoothName(){
         if(bluetoothAdapter == null){
@@ -115,10 +117,6 @@ public class MainActivity extends AppCompatActivity {
             name = bluetoothAdapter.getAddress();
         }
         return name;
-    }
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(discoveryFinishReceiver);
     }
     private Handler handler = new Handler(new Handler.Callback() {
         public boolean handleMessage(Message msg){
@@ -155,25 +153,42 @@ public class MainActivity extends AppCompatActivity {
 
                     if(arrOfStr[1].equals(MyName)){
 
+                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this was for me");
+                        chatAdapter.notifyDataSetChanged();
+                        chatController.stop();
                         String[] newArr = readMessage.split(":");
                         if(newArr[0].equals("T")){
-                            Topology+=readMessage;
+                            Log.e("PAIRS","requester"+TopologyRequestSender);
+                            Topology+=connectingDevice.getName()+";"+arrOfStr[0];
+                            if(!TopologyRequestSender.equals(MyName)&& !TopologyRequestSender.equals("")){
+                                sendMessage(connectingDevice.getName()+";"+arrOfStr[0]+"@"+TopologyRequestSender);
+                                try {
+                                    Thread.sleep(10);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
-                        chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this was for me");
-
                         Log.e("PAIRS","my name");
                         if(readMessage.equals("getTopology@"+MyName)){
-                            Log.e("PAIRS","entered");
+                            Log.e("PAIRS","requester"+TopologyRequestSender);
                             String pairs=getPairedDevices(connectingDevice.getName());
                             Log.e("PAIRS","T:"+pairs+"@"+connectingDevice.getName());
                             TopologyRequestSender=connectingDevice.getName();
                             sendMessage("T:"+pairs+"@"+connectingDevice.getName());
+                            try {
+                                Thread.sleep(10);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            if(!isSent){
+                                getTopology();
+                            }
 
-                            //getTopology();
                         }
-                        chatAdapter.notifyDataSetChanged();
                     }
                     else{
+
                         sendMessage(readMessage);
                     }
 
@@ -330,47 +345,41 @@ public class MainActivity extends AppCompatActivity {
             getTopology();
             Log.e("PAIRS","heree");
         }
-        else{
+        else {
+            chatController.stop();
             String[] arrOfStr = message.split("@");
-            for(int i=0;i<PairedDeviced.size();i++){
-                if(PairedDeviced.get(i).getName().equals(arrOfStr[1])){
-                    if(!TopologyRequestSender.equals(arrOfStr[1])){
-                        BluetoothDevice target=PairedDeviced.get(i);
-                        connectToDevice(target.getAddress());
-                        Log.e("PAIRS",""+chatController.getState());
-                        while(chatController.getState()!=chatController.STATE_CONNECTED){
-                            //Log.e("PAIRS","stuck here");
-                            try {
-                                Thread.sleep(1);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+            for (int i = 0; i < PairedDeviced.size(); i++) {
+                if (PairedDeviced.get(i).getName().equals(arrOfStr[1])) {
+                    BluetoothDevice target = PairedDeviced.get(i);
+                    connectToDevice(target.getAddress());
 
-
+                    while (chatController.getState() != chatController.STATE_CONNECTED) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
-                    }
 
+
+                    }
 
                     if (arrOfStr[0].length() > 0) {
                         byte[] send = message.getBytes();
                         chatController.write(send);
-                        Log.e("PAIRS","heree==");
                     }
                     return;
-
-
 
 
                 }
 
 
             }
-            if(PairedDeviced.size()>0){
+            if (PairedDeviced.size() > 0) {
 
-                BluetoothDevice target=PairedDeviced.get(0);
+                BluetoothDevice target = PairedDeviced.get(0);
                 connectToDevice(target.getAddress());
 
-                while(chatController.getState()!=chatController.STATE_CONNECTED){
+                while (chatController.getState() != chatController.STATE_CONNECTED) {
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
@@ -379,7 +388,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 }
-                if(message.length()>0){
+                if (message.length() > 0) {
 
                     byte[] send = message.getBytes();
                     chatController.write(send);
@@ -387,10 +396,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
             }
+
         }
-
-
-
     }
 
     @Override
@@ -402,13 +409,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             chatController = new ChatController(this, handler);
         }
-
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        unregisterReceiver(discoveryFinishReceiver);
     }
 
     @Override
