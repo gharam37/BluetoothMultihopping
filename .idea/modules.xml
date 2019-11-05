@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/BluetoothChatAppAndroid.iml" filepath="$PROJECT_DIR$/BluetoothChatAppAndroid.iml" />
+      <module fileurl="file://$PROJECT_DIR$/BluetoothMultihopping.iml" filepath="$PROJECT_DIR$/BluetoothMultihopping.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
