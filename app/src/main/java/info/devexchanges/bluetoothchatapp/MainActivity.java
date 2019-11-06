@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     private String Topology="";
     private String TopologyRequestSender="";
     private boolean isSent=false;
+    private boolean islast=false;
+    private int curIndex=0;
     public String getPairedDevices(String requestDevice){
 
         String deviceList="";
@@ -63,18 +65,39 @@ public class MainActivity extends AppCompatActivity {
         return deviceList;
     }
     public void getTopology(){
-        for(BluetoothDevice bt :PairedDeviced){
-
+//        for(BluetoothDevice bt :PairedDeviced){
+//
+//            if(!TopologyRequestSender.equals(bt.getName())){
+//                Log.e("PAIRS","SENDING TO "+bt.getName());
+//                sendMessage("getTopology@"+bt.getName());
+//                try {
+//                    Thread.sleep(100);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//            isSent=true;
+//        }
+        if(curIndex<PairedDeviced.size()){
+            BluetoothDevice bt=PairedDeviced.get(curIndex);
             if(!TopologyRequestSender.equals(bt.getName())){
-                Log.e("PAIRS","SENDING TO "+bt.getName());
                 sendMessage("getTopology@"+bt.getName());
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            }else{
+                if(curIndex+1==PairedDeviced.size()){
+                    islast=true;
+                    sendMessage("T; "+Topology+"@"+TopologyRequestSender);
                 }
             }
-            isSent=true;
+            if(PairedDeviced.size()==1 && !TopologyRequestSender.equals(getLocalBluetoothName())&& !TopologyRequestSender.equals("")){
+                sendMessage("T; child @"+TopologyRequestSender);
+            }
+            curIndex++;
+            if(curIndex==PairedDeviced.size()){
+                islast=true;
+            }
+
+
+
         }
     }
     @Override
@@ -156,34 +179,46 @@ public class MainActivity extends AppCompatActivity {
                         chatMessages.add(connectingDevice.getName() + ":  " + readMessage+" this was for me");
                         chatAdapter.notifyDataSetChanged();
                         chatController.stop();
-                        String[] newArr = readMessage.split(":");
+                        String[] newArr = readMessage.split(";");
+                        //String[] innerArr newArr[1].split(";");
+                        Log.e("PAIRS","read message"+ readMessage);
                         if(newArr[0].equals("T")){
                             Log.e("PAIRS","requester"+TopologyRequestSender);
+                            Log.e("PAIRS","last  "+islast);
                             Topology+=connectingDevice.getName()+";"+arrOfStr[0];
-                            if(!TopologyRequestSender.equals(MyName)&& !TopologyRequestSender.equals("")){
-                                sendMessage(connectingDevice.getName()+";"+arrOfStr[0]+"@"+TopologyRequestSender);
-                                try {
-                                    Thread.sleep(10);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
+//                            if(!TopologyRequestSender.equals(MyName)&& !TopologyRequestSender.equals("")){
+//                                sendMessage(connectingDevice.getName()+";"+arrOfStr[0]+"@"+TopologyRequestSender);
+//                                try {
+//                                    Thread.sleep(10);
+//                                } catch (InterruptedException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+                            if(islast && !TopologyRequestSender.equals(MyName)&& !TopologyRequestSender.equals("") ){
+                                sendMessage(MyName+":"+Topology+"@"+TopologyRequestSender);
+                            }
+                            if(!islast){
+                                getTopology();
                             }
                         }
                         Log.e("PAIRS","my name");
                         if(readMessage.equals("getTopology@"+MyName)){
+                            TopologyRequestSender=connectingDevice.getName();
                             Log.e("PAIRS","requester"+TopologyRequestSender);
                             String pairs=getPairedDevices(connectingDevice.getName());
-                            Log.e("PAIRS","T:"+pairs+"@"+connectingDevice.getName());
-                            TopologyRequestSender=connectingDevice.getName();
-                            sendMessage("T:"+pairs+"@"+connectingDevice.getName());
-                            try {
-                                Thread.sleep(10);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            if(!isSent){
+                            Topology+=pairs+"/";
+
+//                            Log.e("PAIRS","T:"+pairs+"@"+connectingDevice.getName());
+//
+//                            sendMessage("T:"+pairs+"@"+connectingDevice.getName());
+//                            try {
+//                                Thread.sleep(10);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                            if(!isSent){
                                 getTopology();
-                            }
+                            //}
 
                         }
                     }
