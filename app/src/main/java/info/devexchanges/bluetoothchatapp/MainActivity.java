@@ -51,47 +51,51 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<BluetoothDevice> PairedDeviced= new ArrayList<BluetoothDevice> ();
     private String Topology="";
     private String TopologyRequestSender="";
-    private boolean isSent=false;
+    private boolean notSent=false;
     private boolean islast=false;
     private int curIndex=0;
     public String getPairedDevices(String requestDevice){
 
         String deviceList="";
         for(BluetoothDevice bt : PairedDeviced) {
-            if(!requestDevice.equals(bt.getName())){
+
                 deviceList += bt.getName() + ",";
-            }
+
         }
         return deviceList;
     }
     public void getTopology(){
-//        for(BluetoothDevice bt :PairedDeviced){
-//
-//            if(!TopologyRequestSender.equals(bt.getName())){
-//                Log.e("PAIRS","SENDING TO "+bt.getName());
-//                sendMessage("getTopology@"+bt.getName());
-//                try {
-//                    Thread.sleep(100);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//            isSent=true;
-//        }
+        Log.e("PAIRS","index  "+curIndex);
+        Log.e("PAIRS","size  "+PairedDeviced.size());
+        notSent=false;
         if(curIndex<PairedDeviced.size()){
             BluetoothDevice bt=PairedDeviced.get(curIndex);
+           // Log.e("PAIRS","name bt  "+bt);
             if(!TopologyRequestSender.equals(bt.getName())){
                 sendMessage("getTopology@"+bt.getName());
-            }else{
+            }
+            else{
                 if(curIndex+1==PairedDeviced.size()){
                     islast=true;
-                    sendMessage("T; "+Topology+"@"+TopologyRequestSender);
+                    if(PairedDeviced.size()==1){
+                        sendMessage("T; child of"+TopologyRequestSender+"  @"+TopologyRequestSender);
+                    }else{
+                        sendMessage(Topology+"@"+TopologyRequestSender);
+                    }
+
+                }else{
+                    notSent=true;
                 }
+
+
             }
             if(PairedDeviced.size()==1 && !TopologyRequestSender.equals(getLocalBluetoothName())&& !TopologyRequestSender.equals("")){
-                sendMessage("T; child @"+TopologyRequestSender);
+                sendMessage("T; child of"+TopologyRequestSender+"  @"+TopologyRequestSender);
             }
             curIndex++;
+            if(notSent){
+                getTopology();
+            }
             if(curIndex==PairedDeviced.size()){
                 islast=true;
             }
@@ -181,7 +185,8 @@ public class MainActivity extends AppCompatActivity {
                         chatController.stop();
                         String[] newArr = readMessage.split(";");
                         //String[] innerArr newArr[1].split(";");
-                        Log.e("PAIRS","read message"+ readMessage);
+                        Log.e("PAIRS","read message"+ newArr[0]);
+                        Log.e("PAIRS","read message hii");
                         if(newArr[0].equals("T")){
                             Log.e("PAIRS","requester"+TopologyRequestSender);
                             Log.e("PAIRS","last  "+islast);
@@ -195,7 +200,10 @@ public class MainActivity extends AppCompatActivity {
 //                                }
 //                            }
                             if(islast && !TopologyRequestSender.equals(MyName)&& !TopologyRequestSender.equals("") ){
-                                sendMessage(MyName+":"+Topology+"@"+TopologyRequestSender);
+                                sendMessage(Topology+"@"+TopologyRequestSender);
+                            }
+                            if(islast && (TopologyRequestSender.equals(MyName)|| TopologyRequestSender.equals("")) ){
+                                chatMessages.add( "the topology of "+MyName+" is  " + Topology);
                             }
                             if(!islast){
                                 getTopology();
@@ -206,19 +214,10 @@ public class MainActivity extends AppCompatActivity {
                             TopologyRequestSender=connectingDevice.getName();
                             Log.e("PAIRS","requester"+TopologyRequestSender);
                             String pairs=getPairedDevices(connectingDevice.getName());
-                            Topology+=pairs+"/";
+                            Topology+= "T; peers of"+MyName+":"+pairs+"  ";
+                            Log.e("PAIRS","last  "+islast);
+                            getTopology();
 
-//                            Log.e("PAIRS","T:"+pairs+"@"+connectingDevice.getName());
-//
-//                            sendMessage("T:"+pairs+"@"+connectingDevice.getName());
-//                            try {
-//                                Thread.sleep(10);
-//                            } catch (InterruptedException e) {
-//                                e.printStackTrace();
-//                            }
-//                            if(!isSent){
-                                getTopology();
-                            //}
 
                         }
                     }
