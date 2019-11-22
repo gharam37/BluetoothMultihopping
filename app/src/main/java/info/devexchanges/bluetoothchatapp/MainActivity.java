@@ -374,6 +374,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+
     private void sendMessage(String message) {
         if(message.equals("Topology")){
             getTopology();
